@@ -3,3 +3,5 @@ conda/
 elasticsearch-7.10.1/
 kibana-7.10.1-linux-x86_64/
 logstash-7.10.1/
+logs
+work

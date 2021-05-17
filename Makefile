@@ -82,15 +82,64 @@ $(LS_HOME):
 	wget "$(LS_URL)" && \
 	tar -xzf $(LS_GZ)
 
-$(LOGDIR):
-	mkdir -p "$(LOGDIR)"
+LOG_DIR:=$(CURDIR)/logs
+$(LOG_DIR):
+	mkdir -p "$(LOG_DIR)"
 
-install: conda $(ES_HOME) $(KIBANA_HOME) $(LS_HOME) $(LS_PS_JDBC) $(LOGDIR)
+install: conda $(ES_HOME) $(KIBANA_HOME) $(LS_HOME) $(LS_PS_JDBC) $(LOG_DIR)
 	pip install \
 	cwltool==3.0.20201203173111 \
 	cwlref-runner==1.0 \
-	toil[all]==5.0.0
+	toil[all]==5.2.0
 
 # interactive shell with environment populated
 bash:
 	bash
+
+WORK_DIR:=$(CURDIR)/work
+TMP_DIR:=$(WORK_DIR)/tmp
+$(WORK_DIR):
+	mkdir -p "$(WORK_DIR)"
+$(TMP_DIR):
+	mkdir -p "$(TMP_DIR)"
+
+
+
+# ~~~~~ RUN ~~~~~ #
+RUN_ID:=$(shell date +%s)
+RUN_LOG_DIR:=$(LOG_DIR)/$(RUN_ID)
+$(RUN_LOG_DIR):
+	mkdir -p "$(RUN_LOG_DIR)"
+
+# run the workflow
+run-cwltool:
+	cwl-runner workflow.cwl
+
+TOIL_LOG:=$(RUN_LOG_DIR)/toil.log
+TOIL_STDOUT_LOG:=$(RUN_LOG_DIR)/toil.stdout.log
+TOIL_CLUSTERSTATS:=$(RUN_LOG_DIR)/toil_cluster.json
+run-toil: $(RUN_LOG_DIR) $(WORK_DIR) $(TMP_DIR)
+	set -eu -o pipefail
+	toil-cwl-runner \
+	--batchSystem lsf \
+	--retryCount 1 \
+	--disableCaching True \
+	--disable-user-provenance \
+	--disable-host-provenance \
+	--clean onSuccess \
+	--cleanWorkDir onSuccess \
+	--writeLogs "$(RUN_LOG_DIR)" \
+	--writeLogsFromAllJobs \
+	--logFile "$(TOIL_LOG)" \
+	--workDir "$(WORK_DIR)" \
+	--tmpdir-prefix "$(TMP_DIR)" \
+	--clusterStats "$(TOIL_CLUSTERSTATS)" \
+	workflow.cwl 2>&1 | tee "$(TOIL_STDOUT_LOG)"
+# --defaultMemory 100M \
+# --defaultCores 1 \
+# --maxMemory 100M \
+# --maxCores 1 \
+# --maxLocalJobs 10 \
+
+clean:
+	rm -rf "$(WORK_DIR)"
