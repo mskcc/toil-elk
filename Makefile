@@ -83,7 +83,7 @@ $(LS_HOME):
 	tar -xzf $(LS_GZ)
 
 # put system logs for software here
-LOG_DIR:=$(CURDIR)/logs
+export LOG_DIR:=$(CURDIR)/logs
 $(LOG_DIR):
 	mkdir -p "$(LOG_DIR)"
 
@@ -104,7 +104,106 @@ install: conda $(ES_HOME) $(KIBANA_HOME) $(LS_HOME) $(LOG_DIR) $(FB_HOME)
 bash:
 	bash
 
-WORK_DIR:=$(CURDIR)/work
+
+
+
+
+# ~~~~~ Logstash ~~~~~ #
+# https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html
+# https://www.elastic.co/guide/en/logstash/current/pipeline.html
+# https://www.elastic.co/guide/en/logstash/current/configuration.html
+# https://www.elastic.co/guide/en/logstash/current/environment-variables.html
+# https://www.elastic.co/guide/en/logstash/current/plugins-inputs-jdbc.html
+# https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html
+# https://www.elastic.co/guide/en/logstash/current/plugins-inputs-jdbc.html#plugins-inputs-jdbc-last_run_metadata_path
+# config file to use for parsing logs
+LS_CONF:=$(CONFIG_DIR)/logstash.conf
+LS_HOST:=$(HOST)
+# logstash runs on this port
+LS_PORT:=9600
+# connect to Filebeat on this port; make sure its the same as in FB_CONFIG
+LS_FB_PORT:=5044
+# dir for logstash system data
+LS_DATA:=$(CURDIR)/ls_data
+
+$(LS_DATA):
+	mkdir -p "$(LS_DATA)"
+
+logstash-start: $(LS_HOME) $(LS_DATA)
+	logstash \
+	-f "$(LS_CONF)" \
+	--path.data "$(LS_DATA)" \
+	--path.logs "$(LOG_DIR)" \
+	--http.host "$(LS_HOST)" \
+	--http.port "$(LS_PORT)" \
+	--config.reload.automatic
+
+
+
+
+
+
+
+
+# ~~~~~ Filebeat ~~~~~ #
+# NOTE: Make sure Logstash is running first before you start Filebeat or it wont have anything to connect to!
+# https://www.elastic.co/guide/en/beats/filebeat/7.10/filebeat-installation-configuration.html
+# https://www.elastic.co/guide/en/beats/filebeat/6.8/filebeat-input-log.html
+# https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-starting.html
+# demo log file input for filebeat;
+# wget https://download.elastic.co/demos/logstash/gettingstarted/logstash-tutorial.log.gz
+
+# local dirs to store data for the software
+FB_DATA:=$(CURDIR)/filebeat-data
+$(FB_DATA):
+	mkdir -p "$(FB_DATA)"
+
+# demo log file to use for testing Filebeat -> Logstash connection
+$(CURDIR)/logstash-tutorial.log:
+	wget https://download.elastic.co/demos/logstash/gettingstarted/logstash-tutorial.log.gz && gunzip logstash-tutorial.log.gz
+
+# this is the file that we want Filebeat to ingest
+FB_INPUT_LOGFILE:=$(CURDIR)/logstash-tutorial.log
+# example template config file; set IP address, ports, here, the input log path will get overwritten
+FB_CONFIG_EXAMPLE:=$(CONFIG_DIR)/filebeat-example.yml
+
+# this will be the log file that we use when we run Filebeat;
+# need to hard-code in the absolute path to the input log file we want to read in, this will be set dynamically at run time
+# $ make filebeat-run FB_CONFIG=/path/to/new/filebeat-config.yml FB_INPUT_LOGFILE=/path/to/toil/run.log
+# NOTE: dont actually need to do this, you can overwrite the values directly with the -E arg as shown below
+FB_CONFIG:=$(CONFIG_DIR)/filebeat.yml
+$(FB_CONFIG):$(FB_CONFIG_EXAMPLE)
+	sed -e 's|/path/to/logs/logstash-tutorial.log|$(FB_INPUT_LOGFILE)|g' "$(FB_CONFIG_EXAMPLE)" > $(FB_CONFIG)
+.PHONY:$(FB_CONFIG)
+
+# interactive filebeat in current session
+filebeat-run-int: $(FB_CONFIG) $(FB_DATA) $(LOG_DIR)
+	filebeat -e -c "$(FB_CONFIG)" -d "publish" \
+	--path.data "$(FB_DATA)" \
+	--path.logs "$(LOG_DIR)"
+
+# https://stackoverflow.com/questions/51246296/how-to-specify-inputs-on-command-line
+# filebeat -e -E "filebeat.inputs=[{type:log,paths:['/path/to/dir/*']}]"
+filebeat-run: $(FB_DATA) $(LOG_DIR)
+	filebeat -c "$(FB_CONFIG)" \
+	-E "filebeat.inputs=[{type:log,paths:['$(FB_INPUT_LOGFILE)']}]" \
+	-d "publish" \
+	--path.data "$(FB_DATA)" \
+	--path.logs "$(LOG_DIR)"
+
+
+
+
+
+# ~~~~~ RUN WORKFLOW ~~~~~ #
+# get a unique ID for each run
+RUN_ID:=$(shell date +%s)
+# dir to run the workflow in
+RUN_DIR:=$(CURDIR)/runs/$(RUN_ID)
+$(RUN_DIR):
+	mkdir -p "$(RUN_DIR)"
+
+WORK_DIR:=$(RUN_DIR)/work
 TMP_DIR:=$(WORK_DIR)/tmp
 $(WORK_DIR):
 	mkdir -p "$(WORK_DIR)"
@@ -112,21 +211,15 @@ $(TMP_DIR):
 	mkdir -p "$(TMP_DIR)"
 
 
-
-# ~~~~~ RUN ~~~~~ #
-RUN_ID:=$(shell date +%s)
-RUN_LOG_DIR:=$(LOG_DIR)/$(RUN_ID)
-$(RUN_LOG_DIR):
-	mkdir -p "$(RUN_LOG_DIR)"
-
 # run the workflow
 run-cwltool:
 	cwl-runner workflow.cwl
 
-TOIL_LOG:=$(RUN_LOG_DIR)/toil.log
-TOIL_STDOUT_LOG:=$(RUN_LOG_DIR)/toil.stdout.log
-TOIL_CLUSTERSTATS:=$(RUN_LOG_DIR)/toil_cluster.json
-run-toil: $(RUN_LOG_DIR) $(WORK_DIR) $(TMP_DIR)
+# run Toil workflow on LSF HPC
+TOIL_LOG:=$(RUN_DIR)/toil.log
+TOIL_STDOUT_LOG:=$(RUN_DIR)/toil.stdout.log
+TOIL_CLUSTERSTATS:=$(RUN_DIR)/toil_cluster.json
+run-toil: $(RUN_DIR) $(WORK_DIR) $(TMP_DIR)
 	set -eu -o pipefail
 	toil-cwl-runner \
 	--batchSystem lsf \
@@ -136,7 +229,7 @@ run-toil: $(RUN_LOG_DIR) $(WORK_DIR) $(TMP_DIR)
 	--disable-host-provenance \
 	--clean onSuccess \
 	--cleanWorkDir onSuccess \
-	--writeLogs "$(RUN_LOG_DIR)" \
+	--writeLogs "$(RUN_DIR)" \
 	--writeLogsFromAllJobs \
 	--logFile "$(TOIL_LOG)" \
 	--workDir "$(WORK_DIR)" \
@@ -149,34 +242,40 @@ run-toil: $(RUN_LOG_DIR) $(WORK_DIR) $(TMP_DIR)
 # --maxCores 1 \
 # --maxLocalJobs 10 \
 
+FB_RUN_LOG:=$(RUN_DIR)/filebeat_log
+FB_RUN_PID:=$(RUN_DIR)/filebeat.pid
+FB_RUN_DATA:=$(RUN_DIR)/filebeat_data
+run-toil-filebeat: $(RUN_DIR) $(WORK_DIR) $(TMP_DIR)
+	set -eu -o pipefail
+	# start Filebeat in the Run dir and push it to the background; record the pid
+	filebeat -c "$(FB_CONFIG)" \
+	-E "filebeat.inputs=[{type:log,paths:['$(TOIL_LOG)']}]" \
+	-d "publish" \
+	--path.data "$(FB_RUN_DATA)" \
+	--path.logs "$(FB_RUN_LOG)" & pid="$$!" ; echo "$$pid" > "$(FB_RUN_PID)"
+	echo ">>> Filebeat ($$pid) running at $(RUN_DIR)"
+	# pause for Filebeat to start running...
+	sleep 10
+	# kill Filebeat when everything finishes
+	trap "echo '>>> killing Filebeat in $(RUN_DIR)' ; cat $(FB_RUN_PID) | xargs kill ; sleep 3" EXIT TERM INT
+	# run Toil
+	echo ">>> Starting Toil run in $(RUN_DIR)"
+	toil-cwl-runner \
+	--batchSystem lsf \
+	--retryCount 1 \
+	--disableCaching True \
+	--disable-user-provenance \
+	--disable-host-provenance \
+	--clean onSuccess \
+	--cleanWorkDir onSuccess \
+	--writeLogs "$(RUN_DIR)" \
+	--writeLogsFromAllJobs \
+	--logFile "$(TOIL_LOG)" \
+	--workDir "$(WORK_DIR)" \
+	--tmpdir-prefix "$(TMP_DIR)" \
+	workflow.cwl 2>&1 | tee "$(TOIL_STDOUT_LOG)"
+	echo ">>> Toil run finished in $(RUN_DIR)"
+
+
 clean:
 	rm -rf "$(WORK_DIR)"
-
-
-# local dirs to store data for the software
-FB_DATA:=$(CURDIR)/filebeat-data
-$(FB_DATA):
-	mkdir -p "$(FB_DATA)"
-
-# ~~~~~ Filebeat ~~~~~ #
-# https://www.elastic.co/guide/en/beats/filebeat/7.10/filebeat-installation-configuration.html
-# demo log file input for filebeat;
-# wget https://download.elastic.co/demos/logstash/gettingstarted/logstash-tutorial.log.gz
-
-# this is the file that we want Filebeat to ingest
-FB_INPUT_LOGFILE:=$(CURDIR)/logstash-tutorial.log
-# example template config file; set IP address, ports, here, the input log path will get overwritten
-FB_CONFIG_EXAMPLE:=$(CONFIG_DIR)/filebeat-example.yml
-
-# this will be the log file that we use when we run Filebeat;
-# need to hard-code in the absolute path to the input log file we want to read in, this will be set dynamically at run time
-# $ make filebeat-run FB_CONFIG=/path/to/new/filebeat-config.yml FB_INPUT_LOGFILE=/path/to/toil/run.log
-FB_CONFIG:=$(CONFIG_DIR)/filebeat.yml
-$(FB_CONFIG):$(FB_CONFIG_EXAMPLE)
-	sed -e 's|/path/to/logs/logstash-tutorial.log|$(FB_INPUT_LOGFILE)|g' "$(FB_CONFIG_EXAMPLE)" > $(FB_CONFIG)
-.PHONY:$(FB_CONFIG)
-
-filebeat-run: $(FB_CONFIG) $(FB_DATA) $(LOG_DIR)
-	filebeat -e -c "$(FB_CONFIG)" -d "publish" \
-	--path.data "$(FB_DATA)" \
-	--path.logs "$(LOG_DIR)"
