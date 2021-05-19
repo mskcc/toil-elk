@@ -6,7 +6,28 @@ HOST:=localhost
 .ONESHELL:
 
 define help
-...
+Makefile for running Logstash and Filebeat with Toil
+
+- Install dependencies
+
+make install
+
+- (In a separate terminal session) start Logstash
+
+make logstash-start
+
+- (In a separate terminal session) start Filebeat
+
+make filebeat-start
+
+- Run a Toil workflow in the current session (submits child jobs to LSF HPC)
+
+make run-toil
+
+- Submit the Toil workflow as a leader job to LSF HPC (simluates prod workflow execution on HPC)
+
+make submit-toil
+
 endef
 export help
 help:
@@ -108,6 +129,8 @@ bash:
 
 
 
+
+
 # ~~~~~ Logstash ~~~~~ #
 # https://www.elastic.co/guide/en/logstash/current/getting-started-with-logstash.html
 # https://www.elastic.co/guide/en/logstash/current/pipeline.html
@@ -129,6 +152,7 @@ LS_DATA:=$(CURDIR)/ls_data
 $(LS_DATA):
 	mkdir -p "$(LS_DATA)"
 
+# launch a persistent Logstash process in the current session (run it in another terminal)
 logstash-start: $(LS_HOME) $(LS_DATA)
 	logstash \
 	-f "$(LS_CONF)" \
@@ -137,6 +161,7 @@ logstash-start: $(LS_HOME) $(LS_DATA)
 	--http.host "$(LS_HOST)" \
 	--http.port "$(LS_PORT)" \
 	--config.reload.automatic
+
 
 
 
@@ -158,6 +183,23 @@ FB_DATA:=$(CURDIR)/filebeat-data
 $(FB_DATA):
 	mkdir -p "$(FB_DATA)"
 
+# run filebeat in the current session, but monitor a specific directory for Toil logs and LSF logs
+# NOTE: use this one
+FB_CONFIG_TOIL:=$(CONFIG_DIR)/filebeat-toil.yml
+filebeat-start: $(FB_DATA) $(LOG_DIR)
+	filebeat -e \
+	-c "$(FB_CONFIG_TOIL)" \
+	-E "filebeat.inputs=[{type:log,paths:['$(CURDIR)/runs/*/toil.log']},{type:log,paths:['$(CURDIR)/runs/*/lsf.log']}]" \
+	-d "publish" \
+	--path.data "$(FB_DATA)" \
+	--path.logs "$(LOG_DIR)"
+
+
+
+
+
+
+# NOTE: these are other Filebeat recipes for testing, dont actually use them though for the prototype prod method
 # demo log file to use for testing Filebeat -> Logstash connection
 $(CURDIR)/logstash-tutorial.log:
 	wget https://download.elastic.co/demos/logstash/gettingstarted/logstash-tutorial.log.gz && gunzip logstash-tutorial.log.gz
@@ -167,7 +209,7 @@ FB_INPUT_LOGFILE:=$(CURDIR)/logstash-tutorial.log
 # example template config file; set IP address, ports, here, the input log path will get overwritten
 FB_CONFIG_EXAMPLE:=$(CONFIG_DIR)/filebeat-example.yml
 
-# this will be the log file that we use when we run Filebeat;
+# dynamically updated Filebeat config YAML file;
 # need to hard-code in the absolute path to the input log file we want to read in, this will be set dynamically at run time
 # $ make filebeat-run FB_CONFIG=/path/to/new/filebeat-config.yml FB_INPUT_LOGFILE=/path/to/toil/run.log
 # NOTE: dont actually need to do this, you can overwrite the values directly with the -E arg as shown below
@@ -184,12 +226,15 @@ filebeat-run-int: $(FB_CONFIG) $(FB_DATA) $(LOG_DIR)
 
 # https://stackoverflow.com/questions/51246296/how-to-specify-inputs-on-command-line
 # filebeat -e -E "filebeat.inputs=[{type:log,paths:['/path/to/dir/*']}]"
-filebeat-run: $(FB_DATA) $(LOG_DIR)
+filebeat-run-oneinput: $(FB_DATA) $(LOG_DIR)
 	filebeat -c "$(FB_CONFIG)" \
 	-E "filebeat.inputs=[{type:log,paths:['$(FB_INPUT_LOGFILE)']}]" \
 	-d "publish" \
 	--path.data "$(FB_DATA)" \
 	--path.logs "$(LOG_DIR)"
+
+
+
 
 
 
@@ -215,7 +260,7 @@ $(TMP_DIR):
 run-cwltool:
 	cwl-runner workflow.cwl
 
-# run Toil workflow on LSF HPC
+# run Toil workflow, submit child jobs to LSF HPC
 TOIL_LOG:=$(RUN_DIR)/toil.log
 TOIL_STDOUT_LOG:=$(RUN_DIR)/toil.stdout.log
 TOIL_CLUSTERSTATS:=$(RUN_DIR)/toil_cluster.json
@@ -236,12 +281,30 @@ run-toil: $(RUN_DIR) $(WORK_DIR) $(TMP_DIR)
 	--tmpdir-prefix "$(TMP_DIR)" \
 	--clusterStats "$(TOIL_CLUSTERSTATS)" \
 	workflow.cwl 2>&1 | tee "$(TOIL_STDOUT_LOG)"
-# --defaultMemory 100M \
-# --defaultCores 1 \
-# --maxMemory 100M \
-# --maxCores 1 \
-# --maxLocalJobs 10 \
 
+# make a script file to submit the parent leader job to LSF
+SUB_SCRIPT:=job.sh
+.PHONY: $(SUB_SCRIPT)
+$(SUB_SCRIPT):
+	echo '#!/bin/bash' > $(SUB_SCRIPT)
+	echo 'cd $(CURDIR)' >> $(SUB_SCRIPT)
+	echo 'make run-toil RUN_ID=$(RUN_ID)' >> $(SUB_SCRIPT)
+
+# submit the parent leader job to LSF
+LSF_LOG:=$(RUN_DIR)/lsf.log
+submit-toil: $(SUB_SCRIPT) $(RUN_DIR)
+	bsub -oo "$(LSF_LOG)" < $(SUB_SCRIPT)
+
+
+
+
+
+
+
+
+
+# start Filebeat before starting Toil; point Filebeat to the Toil log to load; kill Filebeat when Toil finishes
+# NOTE: dont use this method, use submit-toil with a separate persistent Filebeat process instead
 FB_RUN_LOG:=$(RUN_DIR)/filebeat_log
 FB_RUN_PID:=$(RUN_DIR)/filebeat.pid
 FB_RUN_DATA:=$(RUN_DIR)/filebeat_data
