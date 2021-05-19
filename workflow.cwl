@@ -1,6 +1,7 @@
 #!/usr/bin/env cwl-runner
 cwlVersion: v1.0
 class: Workflow
+doc: Demo CWL workflow that can be run with CWLTool or Toil. This workflow will spawn some child jobs that echo some text into a file and then runs a couple sleep commands in parallel. Workflow does not require any inputs and has no outputs.
 
 requirements:
     MultipleInputFeatureRequirement: {}
