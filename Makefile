@@ -92,8 +92,9 @@ $(FB_HOME): $(FB_GZ)
 $(ES_GZ):
 	wget "$(ES_BIN_URL)"
 
+# this one has an older unzipped timestamp which messes with make on repeat usages
 $(ES_HOME): $(ES_GZ)
-	tar -xzf $(ES_GZ)
+	tar -xzf $(ES_GZ) && touch $(ES_HOME)
 
 $(KIBANA_HOME):
 	wget "$(KIBANA_URL)" && \
@@ -115,11 +116,11 @@ $(CONFIG_DIR):
 
 # install for CWLTool, Toil
 install: conda $(ES_HOME) $(KIBANA_HOME) $(LS_HOME) $(LOG_DIR) $(FB_HOME)
-	conda install conda-forge::jq # conda-forge::yq <- this one has issues installing...
 	pip install \
 	cwltool==3.0.20201203173111 \
 	cwlref-runner==1.0 \
 	toil[all]==5.2.0
+# conda install -y conda-forge::jq # conda-forge::yq <- this one has issues installing...
 
 # interactive shell with environment populated
 bash:
@@ -243,28 +244,51 @@ filebeat-run-oneinput: $(FB_DATA) $(LOG_DIR)
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/important-settings.html
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/system-config.html
 # https://www.elastic.co/guide/en/elasticsearch/reference/current/setting-system-settings.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-settings.html
+
+# this is the default port for ElasticSearch;
 export ES_PORT:=9200
-export ES_HOST:=$(HOST)
+# dont acutally use this yet
+export ES_HOST:=$(IP)
 export ES_URL:=http://$(ES_HOST):$(ES_PORT)
 export ES_PIDFILE:=$(CURDIR)/elasticsearch.pid
 export ES_DATA:=$(CURDIR)/elasticsearch_data
 export ES_INDEX:=log_events
-
+# location of file elasticsearch.yml; elasticsearch-7.10.1/config/elasticsearch.yml
+# export ES_PATH_CONF:=$(CONFIG_DIR)
 $(ES_DATA):
 	mkdir -p "$(ES_DATA)"
 
-# start the ElasticSearch server in daemon mode
+# start the ElasticSearch server
+# https://stackoverflow.com/questions/14379575/configure-port-number-of-elasticsearch
 elasticsearch-start: $(ES_HOME) $(ES_DATA)
-	$(ES_HOME)/bin/elasticsearch \
+	elasticsearch \
 	-E "path.data=$(ES_DATA)" \
 	-E "path.logs=$(LOG_DIR)" \
-	-d -p "$(ES_PIDFILE)"
+	-E "http.port=$(ES_PORT)"
+	-E 'cluster.name=silo-es' \
+	-E "node.name=es-1" \
+	-E "discovery.type=single-node"
+
+# other settings;
+# in daemon mode
+# -d -p "$(ES_PIDFILE)"
+# network settings; dont touch these until moving to prod
+# -E 'cluster.initial_master_nodes=["master"]'
+# -E "network.host=$(ES_HOST)"
+
+# NOTE: issues with node clustering for ES on silo;
+# https://stackoverflow.com/questions/37970187/elasticsearch-cluster-master-not-discovered-exception
+# [2021-05-20T13:42:44,076][WARN ][o.e.b.BootstrapChecks    ] [silo] the default discovery settings are unsuitable for production use; at least one of [discovery.seed_hosts, discovery.seed_providers, cluster.initial_master_nodes] must be configured
+#
+# https://discuss.elastic.co/t/how-my-config-file-should-be-on-publish-mode-with-a-single-node/189034/9
 
 # stop ElasticSearch daemon
-elasticsearch-stop:
-	pkill -F "$(ES_PIDFILE)"
+# elasticsearch-stop:
+# 	pkill -F "$(ES_PIDFILE)"
 
 # make the index where we will store log events
+# NOTE: by default ElasticSearch should auto-create a missing index which is being published to by Logstash, etc..
 elasticsearch-create-index:
 	curl -X PUT "$(ES_URL)/$(ES_INDEX)?pretty"
 
@@ -279,6 +303,9 @@ elasticsearch-count:
 elasticsearch-search:
 	curl  "$(ES_URL)/$(ES_INDEX)/_search?pretty=true"
 
+# sometimes need to clear out old ElasticSearch data in order to restart with fresh settings e.g. for clustering..
+elasticsearch-clean:
+	rm -rf "$(ES_HOME)" "$(ES_DATA)"
 
 
 # ~~~~~ RUN WORKFLOW ~~~~~ #
