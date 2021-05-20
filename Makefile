@@ -139,6 +139,7 @@ bash:
 # https://www.elastic.co/guide/en/logstash/current/plugins-inputs-jdbc.html
 # https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html
 # https://www.elastic.co/guide/en/logstash/current/plugins-inputs-jdbc.html#plugins-inputs-jdbc-last_run_metadata_path
+# https://www.elastic.co/guide/en/logstash/current/advanced-pipeline.html
 # config file to use for parsing logs
 LS_CONF:=$(CONFIG_DIR)/logstash.conf
 LS_HOST:=$(HOST)
@@ -236,7 +237,47 @@ filebeat-run-oneinput: $(FB_DATA) $(LOG_DIR)
 
 
 
+# ~~~~~ ElasticSearch setup ~~~~~ #
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/settings.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/important-settings.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/system-config.html
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/setting-system-settings.html
+export ES_PORT:=9200
+export ES_HOST:=$(HOST)
+export ES_URL:=http://$(ES_HOST):$(ES_PORT)
+export ES_PIDFILE:=$(CURDIR)/elasticsearch.pid
+export ES_DATA:=$(CURDIR)/elasticsearch_data
+export ES_INDEX:=log_events
 
+$(ES_DATA):
+	mkdir -p "$(ES_DATA)"
+
+# start the ElasticSearch server in daemon mode
+elasticsearch-start: $(ES_HOME) $(ES_DATA)
+	$(ES_HOME)/bin/elasticsearch \
+	-E "path.data=$(ES_DATA)" \
+	-E "path.logs=$(LOG_DIR)" \
+	-d -p "$(ES_PIDFILE)"
+
+# stop ElasticSearch daemon
+elasticsearch-stop:
+	pkill -F "$(ES_PIDFILE)"
+
+# make the index where we will store log events
+elasticsearch-create-index:
+	curl -X PUT "$(ES_URL)/$(ES_INDEX)?pretty"
+
+# check if ElasticSearch is running
+elasticsearch-check:
+	curl -X GET "$(ES_URL)/?pretty"
+
+# get the entries in the ElasticSearch index
+elasticsearch-count:
+	curl  "$(ES_URL)/$(ES_INDEX)/_count?pretty=true"
+
+elasticsearch-search:
+	curl  "$(ES_URL)/$(ES_INDEX)/_search?pretty=true"
 
 
 

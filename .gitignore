@@ -13,3 +13,5 @@ runs/
 ls_data/
 data/
 job.sh
+elasticsearch.pid
+elasticsearch_data/
