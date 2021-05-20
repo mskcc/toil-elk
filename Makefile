@@ -265,7 +265,7 @@ elasticsearch-start: $(ES_HOME) $(ES_DATA)
 	elasticsearch \
 	-E "path.data=$(ES_DATA)" \
 	-E "path.logs=$(LOG_DIR)" \
-	-E "http.port=$(ES_PORT)"
+	-E "http.port=$(ES_PORT)" \
 	-E 'cluster.name=silo-es' \
 	-E "node.name=es-1" \
 	-E "discovery.type=single-node"
