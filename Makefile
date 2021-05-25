@@ -165,7 +165,14 @@ logstash-start: $(LS_HOME) $(LS_DATA)
 	--config.reload.automatic
 
 
-
+# testing for parsing of a Toil LSF log from stdin
+logstash-run-log:
+	cat lsf.tail100.log | logstash -f $(CONFIG_DIR)/logstash-toil-lsf-stdin.conf \
+	--path.data "$(LS_DATA)" \
+	--path.logs "$(LOG_DIR)" \
+	--http.host "$(LS_HOST)" \
+	--http.port "$(LS_PORT)" \
+	--config.reload.automatic
 
 
 
