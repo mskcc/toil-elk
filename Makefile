@@ -166,15 +166,24 @@ logstash-start: $(LS_HOME) $(LS_DATA)
 
 
 # testing for parsing of a Toil LSF log from stdin
+LS_RUN_LOG_CONF:=$(CONFIG_DIR)/logstash-toil-lsf-stdin.conf
 logstash-run-log:
-	cat lsf.tail100.log | logstash -f $(CONFIG_DIR)/logstash-toil-lsf-stdin.conf \
+	cat lsf.tail100.log | logstash -f "$(LS_RUN_LOG_CONF)" \
 	--path.data "$(LS_DATA)" \
 	--path.logs "$(LOG_DIR)" \
 	--http.host "$(LS_HOST)" \
 	--http.port "$(LS_PORT)" \
 	--config.reload.automatic
 
-
+# testing for parsing of Toil LSF log passed in from Filebeat
+logstash-run-log-beat: LS_RUN_LOG_CONF=$(CONFIG_DIR)/logstash-toil-lsf-beats.conf
+logstash-run-log-beat:
+	logstash -f "$(LS_RUN_LOG_CONF)" \
+	--path.data "$(LS_DATA)" \
+	--path.logs "$(LOG_DIR)" \
+	--http.host "$(LS_HOST)" \
+	--http.port "$(LS_PORT)" \
+	--config.reload.automatic
 
 
 
@@ -204,7 +213,16 @@ filebeat-start: $(FB_DATA) $(LOG_DIR)
 	--path.logs "$(LOG_DIR)"
 
 
-
+# testing for parsing log file passed from stdin
+# make sure this is running first in another session;
+# $ make logstash-run-log-beat
+FB_CONFIG_RUN_LOG:=$(CONFIG_DIR)/filebeat-toil-lsf-stdin.yml
+filebeat-run-log:
+	sleep 5 ; cat lsf_toil.example.log | filebeat -e \
+	-c "$(FB_CONFIG_RUN_LOG)" \
+	-d "publish" \
+	--path.data "$(FB_DATA)" \
+	--path.logs "$(LOG_DIR)"
 
 
 

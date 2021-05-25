@@ -1,0 +1,24 @@
+# Filebeat config for parsing Toil LSF log passed from stdin
+
+# https://www.elastic.co/guide/en/beats/filebeat/current/multiline-examples.html
+# https://github.com/elastic/examples/blob/master/Miscellaneous/kafka_monitoring/filebeat_monitoring/filebeat.yml
+# https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-input-stdin.html
+
+filebeat.inputs:
+- type: stdin
+  # concatenate append messages that start with whitespace
+  multiline.type: pattern
+  multiline.pattern: '^[[:space:]]'
+  multiline.negate: false
+  multiline.match: after
+
+# - type: stdin
+  # # detect LSF log messages at the end of the file
+  # multiline.type: pattern
+  # multiline.pattern: '^------------------------------------------------------------'
+  # multiline.negate: false
+  # multiline.match: after
+
+
+output.logstash:
+  hosts: ["localhost:5044"]
