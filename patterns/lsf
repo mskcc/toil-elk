@@ -22,6 +22,3 @@ LSF_USAGE CPU time :\s+%{DATA:CPU_TIME}\s+Max Memory :\s+%{DATA:MAX_MEMORY}\s+Av
 
 #Exited with exit code 1.
 LSF_EXIT Exited with %{WORD:STATUS} code %{NUMBER:EXIT_CODE}
-
-#/juno/work/ci/beagle/work/555769ea-7540-41ee-bfb8-7df0ddf42279/lsf.log
-LSF_LOG_PATH %{GREEDYDATA:RUN_ID}
