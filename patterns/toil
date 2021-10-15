@@ -28,7 +28,8 @@ TOIL_JOB_FAILED_3 %{TOIL_LOG_META} The job seems to have left a log file, indica
 TOIL_JOB_FAILED_4 %{TOIL_LOG_META} Due to %{WORD:STATUS} we are reducing the remaining try count of job %{TOIL_JOB_META} with ID .* to %{NUMBER:RETRYCOUNT}
 
 #[2021-06-09T20:07:10-0400] [Thread-69 ] [E] [toil.batchSystems.lsf] bjobs detected job failed with: exit code: 1for job: 82527470
-TOIL_JOB_FAILED_5 %{TOIL_LOG_META} bjobs detected job %{WORD:STATUS} with: exit code: %{NUMBER:EXITCODE}for job: %{NUMBER:LSF_ID}
+#[2021-10-13T04:39:34-0400] [Thread-279] [E] [toil.batchSystems.lsf] bjobs detected job failed with: exit code: 1exit reason: TERM_MEMLIMIT: job killed after reaching LSF memory usage limitfor job: 3354172
+TOIL_JOB_FAILED_5 %{TOIL_LOG_META} bjobs detected job %{WORD:STATUS} with: exit code: %{NUMBER:EXITCODE}(exit reason: %{DATA:EXIT_REASON})?for job: %{NUMBER:LSF_ID}
 
 #[2021-07-06T17:04:12-0400] [Thread-118] [E] [toil.batchSystems.abstractGridEngineBatchSystem] Will retry errored operation submitJob, code 255: System call failed: No such file or directory. Job not submitted.
 TOIL_OPERATION_FAILED %{TOIL_LOG_META} Will retry %{WORD:STATUS} operation %{WORD:TOIL_OPERATION}, code %{NUMBER:EXITCODE}: %{DATA:ERROR_INFO}$
@@ -144,3 +145,21 @@ TOIL_SUCCESSFULLY_COMPLETED %{SPACE:STATUS}Successfully completed.
 
 #\"location\": \"file:///juno/work/ci/staging-output/same_output_dir_test/argos/test_run_jj/1.1.2/20210602_16_55_206316/vcf/s_YJ_egc_030_X.s_Normal_Pooled_FROZEN_1_04763_E.combined-variants.vcf.gz\",                \"size\": 141858,                \"basename\": \"s_YJ_egc_030_X.s_Normal_Pooled_FROZEN_1_04763_E.combined-variants.vcf.gz\",                \"nameroot\": \"s_YJ_egc_030_X.s_Normal_Pooled_FROZEN_1_04763_E.combined-variants.vcf\",                \"nameext\": \".gz\",                \"checksum\": \"sha1$1329ffda496abd5db1e098264bbc733d488ab5fe\"  
 TOIL_OUTPUT_FILES %{SPACE:STATUS}location.*size.*basename.*checksum
+
+#[2021-07-06T17:16:51-0400] [MainThread] [W] [toil.leader] No log file is present, despite job failing: 'CWLJob' head kind-CWLJob/instance-xfqo2c8f
+TOIL_NO_LOG_FAILURE %{TOIL_LOG_META} %{GREEDYDATA:STATUS}: %{TOIL_JOB_META}
+
+[2021-10-13T04:39:34-0400] [MainThread] [W] [toil.leader] Job failed with exit value BatchJobExitReason.MEMLIMIT: 'CWLJob' perl /usr/bin/vardict/var2vcf_paired.pl kind-CWLJob/instance-0399ulcfExit reason: None"
+TOIL_BATCH_SYSTEM_FAILURE %{TOIL_LOG_META} Job %{DATA:STATUS} with exit value %{GREEDYDATA:EXITREASON}: %{TOIL_JOB_META}Exit reason: %{DATA:LSF_EXITREASON}
+
+#[2021-07-06T17:16:50-0400] [MainThread] [W] [toil.leader] Despite the batch system claiming failure the job 'CWLJob' grep -v # kind-CWLJob/instance-wp9bpkbb seems to have finished and been removed
+TOIL_BATCH_DESPITE_FAILURE %{TOIL_LOG_META} %{DATA:STATUS} the job %{TOIL_JOB_META}
+
+#[2021-07-06T17:02:02-0400] [MainThread] [I] [toil.worker] Chaining from 'CWLScatter' kind-CWLScatter/instance-__3q9h6r to 'CWLGather' kind-CWLGather/instance-rngzybfz
+TOIL_CHAINING_FROM_JOB %{TOIL_LOG_META} %{DATA:STATUS} %{TOIL_JOB_META} to %{TOIL_JOB_META}
+
+#[2021-10-13T04:39:34-0400] [MainThread] [W] [toil.job] We have doubled the memory of the failed job 'CWLJob' perl /usr/bin/vardict/var2vcf_paired.pl kind-CWLJob/instance-0399ulcf to 67108864000 bytes due to doubleMem flag
+TOIL_DOUBLE_MEMORY %{TOIL_LOG_META} We have %{DATA:STATUS} of the failed job %{TOIL_JOB_META} to %{NUMBER:NEW_MEMORY} bytes due to doubleMem flag
+
+[2021-10-13T04:40:37-0400] [MainThread] [I] [toil.realtimeLogger] Joining real-time logging server thread.
+TOIL_JOINING_REAL_TIME_LOGGER %{TOIL_LOG_META} Joining real-time logging server thread.%{DATA:STATUS}
