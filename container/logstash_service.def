@@ -33,7 +33,17 @@ Includecmd: no
         exit 1
     fi
 
-    /usr/share/logstash/bin/logstash -f $LOGSTASH_CONFIG_PATH
+    if [ -z "$LOGSTASH_DATA_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_LOGSTASH_DATA_PATH is not set."
+        exit 1
+    fi
+
+    if [ -z "$LOGSTASH_LOG_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_LOGSTASH_DATA_PATH is not set."
+        exit 1
+    fi
+
+    /usr/share/logstash/bin/logstash --path.data $LOGSTASH_DATA_PATH -l $LOGSTASH_LOG_PATH -f $LOGSTASH_CONFIG_PATH
 
 
 
