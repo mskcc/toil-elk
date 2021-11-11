@@ -39,7 +39,7 @@ Includecmd: no
     fi
 
     if [ -z "$LOGSTASH_LOG_PATH" ]; then
-        echo "ERROR: SINGULARITYENV_LOGSTASH_DATA_PATH is not set."
+        echo "ERROR: SINGULARITYENV_LOGSTASH_LOG_PATH is not set."
         exit 1
     fi
 
