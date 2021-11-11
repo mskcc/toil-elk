@@ -1,0 +1,40 @@
+Bootstrap: docker
+From: logstash:7.14.2
+Includecmd: no
+
+##############################
+# run logstash service
+##############################
+
+%startscript
+
+    if [ -z "$TOIL_WORK_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_TOIL_WORK_PATH is not set."
+        exit 1
+    fi
+
+    if [ -z "$SINCEDB_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_SINCEDB_PATH is not set."
+        exit 1
+    fi
+
+    if [ -z "$PATTERNS_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_PATTERNS_PATH is not set."
+        exit 1
+    fi
+
+    if [ -z "$ELASTIC_SEARCH_URL" ]; then
+        echo "ERROR: SINGULARITYENV_ELASTIC_SEARCH_URL is not set."
+        exit 1
+    fi
+
+    if [ -z "$LOGSTASH_CONFIG_PATH" ]; then
+        echo "ERROR: SINGULARITYENV_LOGSTASH_CONFIG_PATH is not set."
+        exit 1
+    fi
+
+    /usr/share/logstash/bin/logstash -f $LOGSTASH_CONFIG_PATH
+
+
+
+
