@@ -43,7 +43,7 @@ Includecmd: no
         exit 1
     fi
 
-    /usr/share/logstash/bin/logstash --path.data $LOGSTASH_DATA_PATH -l $LOGSTASH_LOG_PATH -f $LOGSTASH_CONFIG_PATH
+    /usr/share/logstash/bin/logstash --path.data $LOGSTASH_DATA_PATH -f $LOGSTASH_CONFIG_PATH >> $LOGSTASH_LOG_PATH 2>&1
 
 
 
