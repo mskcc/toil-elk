@@ -43,7 +43,17 @@ Includecmd: no
         exit 1
     fi
 
-    /usr/share/logstash/bin/logstash --path.data $LOGSTASH_DATA_PATH -f $LOGSTASH_CONFIG_PATH >> $LOGSTASH_LOG_PATH 2>&1
+    if [ -z "$LOGSTASH_HTTP_HOST" ]; then
+        echo "ERROR: SINGULARITYENV_LOGSTASH_HTTP_HOST is not set."
+        exit 1
+    fi
+
+    if [ -z "$LOGSTASH_HTTP_PORT" ]; then
+        echo "ERROR: SINGULARITYENV_LOGSTASH_HTTP_PORT is not set."
+        exit 1
+    fi
+
+    /usr/share/logstash/bin/logstash --path.data $LOGSTASH_DATA_PATH -f $LOGSTASH_CONFIG_PATH --http.host $LOGSTASH_HTTP_HOST --http.port $LOGSTASH_HTTP_PORT >> $LOGSTASH_LOG_PATH 2>&1
 
 
 
