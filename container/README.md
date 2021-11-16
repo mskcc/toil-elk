@@ -28,6 +28,11 @@ Here are the essential environment variables needed by the instance
 | SINGULARITYENV_LOGSTASH_HTTP_HOST   | logstash server host                                                |
 | SINGULARITYENV_LOGSTASH_HTTP_PORT   | logstash server port                                                |
 
+In addition, you would need to set:
+```
+SINGULARITYENV_LS_JAVA_OPTS="-Xmx2g -Xms2g"
+```
+to prooperly configure the memory of the logstash service.
 #### Configure singularity mount points
 
 Since we will be running our instance in a singularity container, we need to make sure it has the right paths mounted to work properly. Running the following command will mount /juno
