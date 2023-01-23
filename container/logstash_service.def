@@ -2,6 +2,12 @@ Bootstrap: docker
 From: logstash:7.14.2
 Includecmd: no
 
+# Install datadog plugin
+
+%post
+    
+    logstash-plugin install logstash-output-datadog_logs
+
 ##############################
 # run logstash service
 ##############################
