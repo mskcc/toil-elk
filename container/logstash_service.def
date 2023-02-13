@@ -29,11 +29,6 @@ Includecmd: no
         exit 1
     fi
 
-    if [ -z "$ELASTIC_SEARCH_URL" ]; then
-        echo "ERROR: SINGULARITYENV_ELASTIC_SEARCH_URL is not set."
-        exit 1
-    fi
-
     if [ -z "$LOGSTASH_CONFIG_PATH" ]; then
         echo "ERROR: SINGULARITYENV_LOGSTASH_CONFIG_PATH is not set."
         exit 1
