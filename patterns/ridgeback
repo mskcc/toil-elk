@@ -5,8 +5,6 @@
 #[2023-05-12 14:52:52,379: INFO/MainProcess] missed heartbeat from celery@beagle.production.beagle_worker
 ##ridgeback_production_check_status_queue.log
 #[2023-05-10 02:05:05,942: INFO/ForkPoolWorker-17] CHECK_COMMAND_LINE_STATUS command for job e8bd85fd-8682-4b26-9801-c34d319b829e
-RIDGEBACK_INFO_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECONd}.* %{LOGLEVEL:LEVEL}%{GREEDYDATA:INFO}
-
 ##ridgeback_production_check_status_queue.log
 #[2023-05-04 11:22:47,451: ERROR/MainProcess] consumer: Cannot connect to amqp://ridgeback:**@127.0.0.1:5688//: [Errno 111] Connection refused.
 #[2023-05-04 10:33:55,022: WARNING/MainProcess] consumer: Connection to broker lost. Trying to re-establish the connection...
@@ -18,6 +16,6 @@ RIDGEBACK_INFO_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR
 #[2023-05-10 02:05:06,033: ERROR/ForkPoolWorker-17] Command {'type': 1, 'job_id': 'e8bd85fd-8682-4b26-9801-c34d319b829e'} failed. Not retrying. Excaption RootJob couldn't be fetched
 #ridgeback_producion_cleanup_queue.log
 #[2023-05-13 02:58:00,054: ERROR/MainProcess] Received unregistered task of type 'orchestrator.tasks.cleanup_terminated_jobs'.
-RIDGEBACK_ERROR_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECONd}.* %{LOGLEVEL:LEVEL}%{GREEDYDATA:ERROR_INFO}
-
-
+##ridgeback_producion_action_queue
+[2023-05-22 02:59:00,434: INFO/ForkPoolWorker-3] Task orchestrator.tasks.cleanup_folders[0544dfdd-6da3-408d-a688-fe429237e1ab] succeeded in 0.0231776125729084s: None
+RIDGEBACK_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECONd}.* %{LOGLEVEL:LEVEL}%{GREEDYDATA:EXTRA_INFO}
