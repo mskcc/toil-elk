@@ -1,8 +1,0 @@
-# Filebeat config for montioring a directory where Toil workflows will be running
-# supply this from the CLI instead
-# filebeat.inputs:
-# - type: log
-#   paths:
-#     - /path/to/logs/logstash-tutorial.log
-output.logstash:
-  hosts: ["localhost:5044"]
