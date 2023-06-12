@@ -4,3 +4,5 @@ export PATTERNS_PATH=
 export DD_TAGS=
 export LOGSTASH_OUTPUT_PATH=
 export MEMCACHED=
+export BEAGLE_LOG_PATH=
+export RIDGEBACK_LOG_PATH=
