@@ -18,4 +18,4 @@
 #[2023-05-13 02:58:00,054: ERROR/MainProcess] Received unregistered task of type 'orchestrator.tasks.cleanup_terminated_jobs'.
 ##ridgeback_producion_action_queue
 [2023-05-22 02:59:00,434: INFO/ForkPoolWorker-3] Task orchestrator.tasks.cleanup_folders[0544dfdd-6da3-408d-a688-fe429237e1ab] succeeded in 0.0231776125729084s: None
-RIDGEBACK_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECONd}.* %{LOGLEVEL:level}%{GREEDYDATA:EXTRA_INFO}
+RIDGEBACK_MAINPROCESS %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECONd}.* %{LOGLEVEL:LEVEL}%{GREEDYDATA:EXTRA_INFO}
