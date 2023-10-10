@@ -1,4 +1,0 @@
-# NOTE: move this file to directory $(ES_HOME)/config
-# NOTE: we are not actually using this in the demo but this should be used in prod
-network.host: 127.0.0.1
-http.port: 9200

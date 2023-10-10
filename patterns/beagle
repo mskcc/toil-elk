@@ -1,0 +1,23 @@
+
+#beagle_server.log
+
+# 2023-05-08 13:27:06|WARNING|django.request|Bad Request: /v0/run/run/start/7eb938a0-edc1-11ed-b612-ac1f6bb4ad16
+# 2023-05-08 10:54:12|WARNING|django.request|Not Found: /ADMIN
+BEAGLE_DJANGO_REQUEST %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECOND}\|%{DATA:level}\|%{DATA:TYPE}\|%{GREEDYDATA:EXTRA_INFO}
+
+#[2023-05-01 21:53:17 +0000] [345] [ERROR] Can't connect to ('0.0.0.0', 5001)
+#[2023-05-01 22:17:40 +0000] [32] [INFO] Starting gunicorn 20.0.4
+BEAGLE_SERVER_ERROR %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECOND}.*%{LOGLEVEL:level}\s*]%{GREEDYDATA:EXTRA_INFO}
+
+#beagle_runnerlog
+#[2023-05-14 00:13:30,865: DEBUG/MainProcess] pidbox received method enable_events() [reply_to:None ticket:None]
+#beagle_worker.log
+#[2023-05-14 00:08:24,249: INFO/ForkPoolWorker-63] Checking file permissions for /igo/delivery/FASTQ/RUTH_0221_BHY7TLDSX5/Project_14522/Sample_HEK_VPH_GEX_1_IGO_14522_3/HEK_VPH_GEX_1_IGO_14522_3_S2_L001_I1_001.fastq.gz
+BEAGLE_WORKER_INFO %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECOND}.* %{LOGLEVEL:level}%{GREEDYDATA:EXTRA_INFO}
+
+#beagle_runner.log
+#[2023-05-14 00:13:04,507: ERROR/ForkPoolWorker-63] [47fd2d42-f002-11ed-a96e-ac1f6bb4ad16] [4617012e-f002-11ed-a96e-ac1f6bb4ad16] [3fda9539-13f5-4778-aa17-9fadc095cb5d] [a809e211-0326-406e-a192-232f78b378a1] [13843_C] [['C-3HWX1F-F001-d01']] Job failed
+#[2023-05-14 00:13:04,891: ERROR/ForkPoolWorker-16] Task runner.tasks.fail_job[dbd497bd-70ef-4696-b5b1-1e79732e9f03] raised unexpected: UnboundLocalError("local variable 'run_message' referenced before assignment")
+#beagle_worker.log
+#[2023-05-14 00:08:24,261: ERROR/ForkPoolWorker-63] Task beagle_etl.jobs.metadb_jobs.new_request[412b5934-5d23-4dd4-956c-43486f30ca4a] raised unexpected: FailedToCopyFilePermissionDeniedException()
+BEAGLE_WORKER_ERROR %{YEAR:YEAR}-%{MONTHNUM:MONTH}-%{MONTHDAY:DAY} %{HOUR:HOUR}:%{MINUTE:MINUTE}:%{SECOND:SECOND}.* %{LOGLEVEL:level}%{GREEDYDATA:EXTRA_INFO}

@@ -2,6 +2,12 @@ Bootstrap: docker
 From: logstash:7.14.2
 Includecmd: no
 
+# Install datadog plugin
+
+%post
+    
+    logstash-plugin install logstash-output-datadog_logs
+
 ##############################
 # run logstash service
 ##############################
@@ -20,11 +26,6 @@ Includecmd: no
 
     if [ -z "$PATTERNS_PATH" ]; then
         echo "ERROR: SINGULARITYENV_PATTERNS_PATH is not set."
-        exit 1
-    fi
-
-    if [ -z "$ELASTIC_SEARCH_URL" ]; then
-        echo "ERROR: SINGULARITYENV_ELASTIC_SEARCH_URL is not set."
         exit 1
     fi
 
